@@ -6,13 +6,13 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       background: #46178f;
       color: white;
       text-align: center;
     }
 
-    .screen {
+    #codeScreen {
       padding-top: 100px;
     }
 
@@ -23,16 +23,14 @@
     input {
       padding: 15px;
       font-size: 20px;
-      width: 250px;
+      text-align: center;
       border-radius: 8px;
       border: none;
-      text-align: center;
     }
 
     button {
-      display: block;
-      margin: 20px auto;
-      padding: 15px 40px;
+      padding: 15px 30px;
+      margin: 15px;
       font-size: 20px;
       border: none;
       border-radius: 8px;
@@ -41,21 +39,31 @@
 
     #games {
       display: none;
+      padding-top: 50px;
     }
 
     .game {
       display: inline-block;
       background: white;
       color: black;
-      padding: 30px;
-      margin: 15px;
-      width: 220px;
+      padding: 25px;
+      margin: 10px;
       border-radius: 15px;
+      width: 220px;
     }
 
-    .game button {
-      background: #46178f;
-      color: white;
+    #gameArea {
+      display: none;
+      margin: 30px auto;
+      width: 90%;
+    }
+
+    iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+      border-radius: 15px;
+      background: white;
     }
   </style>
 </head>
@@ -63,13 +71,15 @@
 <body>
 
   <!-- CODE SCREEN -->
-  <div id="codeScreen" class="screen">
+  <div id="codeScreen">
 
     <h1>MathQuiz</h1>
 
     <h2>Enter Game Code</h2>
 
     <input id="code" placeholder="Game Code">
+
+    <br>
 
     <button onclick="unlock()">ENTER</button>
 
@@ -78,32 +88,34 @@
   </div>
 
 
-  <!-- MAIN WEBSITE -->
-  <div id="games" class="screen">
+  <!-- MAIN PAGE -->
+  <div id="games">
 
     <h1>📚 MathQuiz</h1>
 
     <h2>Learning Resources</h2>
 
-
     <div class="game">
-
       <h2>📖 Study Tools</h2>
 
-      <button onclick="playMinecraft(eaglercraft1-8.github.io)">
+      <button onclick="openGame('https://eaglercraft1-8.github.io')">
         OPEN
       </button>
+    </div>
 
+    <div class="game">
+      <h2>🧮 Math Practice</h2>
+
+      <button onclick="openGame('https://snowrider-unblocked.github.io')">
+        OPEN
+      </button>
     </div>
 
 
-    <div class="game">
+    <!-- GAME WINDOW -->
+    <div id="gameArea">
 
-      <h2>🧮 Math Practice</h2>
-
-      <button onclick="playSnowRider(snowrider-unblocked.github.io)">
-        OPEN
-      </button>
+      <iframe id="gameFrame"></iframe>
 
     </div>
 
@@ -132,16 +144,11 @@
     }
 
 
-    function playMinecraft() {
+    function openGame(url) {
 
-      alert("Minecraft will go here!");
+      document.getElementById("gameArea").style.display = "block";
 
-    }
-
-
-    function playSnowRider() {
-
-      alert("Snow Rider 3D will go here!");
+      document.getElementById("gameFrame").src = url;
 
     }
 
