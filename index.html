@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MathQuiz</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #46178f;
+      color: white;
+      text-align: center;
+    }
+
+    .screen {
+      padding-top: 100px;
+    }
+
+    h1 {
+      font-size: 50px;
+    }
+
+    input {
+      padding: 15px;
+      font-size: 20px;
+      width: 250px;
+      border-radius: 8px;
+      border: none;
+      text-align: center;
+    }
+
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 15px 40px;
+      font-size: 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #games {
+      display: none;
+    }
+
+    .game {
+      display: inline-block;
+      background: white;
+      color: black;
+      padding: 30px;
+      margin: 15px;
+      width: 220px;
+      border-radius: 15px;
+    }
+
+    .game button {
+      background: #46178f;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- CODE SCREEN -->
+  <div id="codeScreen" class="screen">
+
+    <h1>MathQuiz</h1>
+
+    <h2>Enter Game Code</h2>
+
+    <input id="code" placeholder="Game Code">
+
+    <button onclick="unlock()">ENTER</button>
+
+    <p id="wrong"></p>
+
+  </div>
+
+
+  <!-- MAIN WEBSITE -->
+  <div id="games" class="screen">
+
+    <h1>📚 MathQuiz</h1>
+
+    <h2>Learning Resources</h2>
+
+
+    <div class="game">
+
+      <h2>📖 Study Tools</h2>
+
+      <button onclick="playMinecraft()">
+        OPEN
+      </button>
+
+    </div>
+
+
+    <div class="game">
+
+      <h2>🧮 Math Practice</h2>
+
+      <button onclick="playSnowRider()">
+        OPEN
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    function unlock() {
+
+      var code = document.getElementById("code").value;
+
+      if (code === "223605") {
+
+        document.getElementById("codeScreen").style.display = "none";
+
+        document.getElementById("games").style.display = "block";
+
+      } else {
+
+        document.getElementById("wrong").innerText =
+          "Wrong code! Try again.";
+
+      }
+
+    }
+
+
+    function playMinecraft() {
+
+      alert("Minecraft will go here!");
+
+    }
+
+
+    function playSnowRider() {
+
+      alert("Snow Rider 3D will go here!");
+
+    }
+
+  </script>
+
+</body>
+</html>
