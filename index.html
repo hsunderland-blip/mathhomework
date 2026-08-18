@@ -27,7 +27,6 @@
 
     #codeScreen h1 {
       font-size: 55px;
-      margin-bottom: 10px;
     }
 
     input {
@@ -104,8 +103,6 @@
 
 <body>
 
-<!-- CODE SCREEN -->
-
 <div id="codeScreen">
 
   <h1>MathQuiz</h1>
@@ -122,8 +119,6 @@
 
 </div>
 
-
-<!-- GAME -->
 
 <div id="game">
 
@@ -154,9 +149,7 @@
 
     <br>
 
-    <button onclick="restart()">
-      RESTART
-    </button>
+    <button onclick="restart()">RESTART</button>
 
   </div>
 
@@ -174,20 +167,15 @@ let W;
 let H;
 
 function resize() {
-
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
-
 }
 
 window.addEventListener("resize", resize);
-
 resize();
 
 
-/* =========================
-   GAME VARIABLES
-========================= */
+/* GAME VARIABLES */
 
 let playing = false;
 let crashed = false;
@@ -201,15 +189,12 @@ let distance = 0;
 let coins = 0;
 
 let objects = [];
-
 let snow = [];
 
 let keys = {};
 
 
-/* =========================
-   CONTROLS
-========================= */
+/* CONTROLS */
 
 document.addEventListener("keydown", function(e) {
 
@@ -224,9 +209,7 @@ document.addEventListener("keyup", function(e) {
 });
 
 
-/* =========================
-   UNLOCK
-========================= */
+/* UNLOCK */
 
 function unlock() {
 
@@ -253,9 +236,7 @@ function unlock() {
 }
 
 
-/* =========================
-   START
-========================= */
+/* START GAME */
 
 function startGame() {
 
@@ -271,12 +252,19 @@ function startGame() {
   coins = 0;
 
   objects = [];
-
   snow = [];
 
   createObjects();
-
   createSnow();
+
+  document.getElementById("speed")
+    .innerText = "0";
+
+  document.getElementById("distance")
+    .innerText = "0";
+
+  document.getElementById("coins")
+    .innerText = "0";
 
   document.getElementById("message")
     .style.display = "none";
@@ -286,42 +274,45 @@ function startGame() {
 }
 
 
-/* =========================
-   OBJECT GENERATION
-========================= */
+/* SAFE OBJECT GENERATION */
 
 function createObjects() {
 
   for (let i = 0; i < 45; i++) {
 
     let x;
+    let z;
 
     /*
-      Keep the first section
-      mostly clear.
+      The first 12 objects are placed
+      far away and outside the middle
+      of the track.
     */
 
-    if (i < 8) {
+    if (i < 12) {
 
       x =
-        (Math.random() < 0.5 ? -1 : 1)
-        *
-        (0.8 + Math.random() * 0.5);
+        Math.random() < 0.5
+          ? -1.0 - Math.random() * 0.35
+          : 1.0 + Math.random() * 0.35;
+
+      z =
+        1.8 + Math.random() * 1.8;
 
     } else {
 
       x =
         (Math.random() * 2 - 1) * 1.45;
 
+      z =
+        0.6 + Math.random() * 3.4;
+
     }
 
     objects.push({
 
       x: x,
-
-      z:
-        0.35 +
-        Math.random() * 3.5,
+      z: z,
 
       type:
         Math.random() < 0.45
@@ -337,9 +328,7 @@ function createObjects() {
 }
 
 
-/* =========================
-   SNOW
-========================= */
+/* SNOW */
 
 function createSnow() {
 
@@ -348,7 +337,6 @@ function createSnow() {
     snow.push({
 
       x: Math.random() * W,
-
       y: Math.random() * H,
 
       size:
@@ -364,16 +352,20 @@ function createSnow() {
 }
 
 
-/* =========================
-   LOOP
-========================= */
+/* GAME LOOP */
 
 function loop() {
 
-  if (!playing) return;
+  /*
+    Completely stop the loop after
+    crashing.
+  */
+
+  if (!playing || crashed) {
+    return;
+  }
 
   update();
-
   draw();
 
   requestAnimationFrame(loop);
@@ -381,9 +373,7 @@ function loop() {
 }
 
 
-/* =========================
-   UPDATE
-========================= */
+/* UPDATE */
 
 function update() {
 
@@ -423,7 +413,7 @@ function update() {
     );
 
 
-  /* SPEED */
+  /* GRADUAL SPEED */
 
   speed += 0.000004;
 
@@ -442,6 +432,12 @@ function update() {
 
     obj.z -= speed;
 
+
+    /*
+      When an object goes behind
+      the player, recycle it far
+      into the distance.
+    */
 
     if (obj.z < 0.035) {
 
@@ -480,6 +476,8 @@ function update() {
 
         crash();
 
+        return;
+
       }
 
     }
@@ -499,7 +497,8 @@ function update() {
 
       flake.y = -10;
 
-      flake.x = Math.random() * W;
+      flake.x =
+        Math.random() * W;
 
     }
 
@@ -523,30 +522,21 @@ function update() {
 }
 
 
-/* =========================
-   DRAW
-========================= */
+/* DRAW */
 
 function draw() {
 
   drawSky();
-
   drawMountains();
-
   drawSlope();
-
   drawObjects();
-
   drawPlayer();
-
   drawSnow();
 
 }
 
 
-/* =========================
-   SKY
-========================= */
+/* SKY */
 
 function drawSky() {
 
@@ -578,9 +568,7 @@ function drawSky() {
 }
 
 
-/* =========================
-   MOUNTAINS
-========================= */
+/* MOUNTAINS */
 
 function drawMountains() {
 
@@ -620,22 +608,15 @@ function drawMountains() {
     H * 0.5
   );
 
-  ctx.lineTo(
-    W,
-    H
-  );
-
-  ctx.lineTo(
-    0,
-    H
-  );
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
 
   ctx.closePath();
 
   ctx.fill();
 
 
-  /* Mountain snow caps */
+  /* Snow cap */
 
   ctx.fillStyle = "white";
 
@@ -668,14 +649,11 @@ function drawMountains() {
 }
 
 
-/* =========================
-   SLOPE
-========================= */
+/* SLOPE */
 
 function drawSlope() {
 
-  const horizon =
-    H * 0.46;
+  const horizon = H * 0.46;
 
   ctx.fillStyle = "#ffffff";
 
@@ -691,26 +669,15 @@ function drawSlope() {
     horizon
   );
 
-  ctx.lineTo(
-    W,
-    H
-  );
-
-  ctx.lineTo(
-    0,
-    H
-  );
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
 
   ctx.closePath();
 
   ctx.fill();
 
 
-  /* Track lines */
-
-  ctx.strokeStyle =
-    "#d7eaf2";
-
+  ctx.strokeStyle = "#d7eaf2";
   ctx.lineWidth = 3;
 
   for (let i = 1; i < 14; i++) {
@@ -719,8 +686,8 @@ function drawSlope() {
 
     let y =
       horizon +
-      Math.pow(t, 2)
-      * (H - horizon);
+      Math.pow(t, 2) *
+      (H - horizon);
 
     let width =
       t * W * 0.48;
@@ -744,9 +711,7 @@ function drawSlope() {
 }
 
 
-/* =========================
-   OBJECTS
-========================= */
+/* OBJECTS */
 
 function drawObjects() {
 
@@ -755,14 +720,11 @@ function drawObjects() {
       (a, b) => b.z - a.z
     );
 
-
   for (let obj of sorted) {
 
-    const horizon =
-      H * 0.46;
+    const horizon = H * 0.46;
 
-    const scale =
-      1 / obj.z;
+    const scale = 1 / obj.z;
 
     const x =
       W / 2 +
@@ -777,39 +739,24 @@ function drawObjects() {
       H *
       0.31;
 
-    const size =
-      45 * scale;
+    const size = 45 * scale;
 
 
     if (obj.type === "tree") {
 
-      drawTree(
-        x,
-        y,
-        size
-      );
+      drawTree(x, y, size);
 
     }
-
 
     if (obj.type === "rock") {
 
-      drawRock(
-        x,
-        y,
-        size
-      );
+      drawRock(x, y, size);
 
     }
 
-
     if (obj.type === "coin") {
 
-      drawCoin(
-        x,
-        y,
-        size
-      );
+      drawCoin(x, y, size);
 
     }
 
@@ -818,15 +765,9 @@ function drawObjects() {
 }
 
 
-/* =========================
-   TREE
-========================= */
+/* TREE */
 
-function drawTree(
-  x,
-  y,
-  size
-) {
+function drawTree(x, y, size) {
 
   ctx.fillStyle = "#71482c";
 
@@ -892,15 +833,9 @@ function drawTree(
 }
 
 
-/* =========================
-   ROCK
-========================= */
+/* ROCK */
 
-function drawRock(
-  x,
-  y,
-  size
-) {
+function drawRock(x, y, size) {
 
   ctx.fillStyle = "#727b80";
 
@@ -943,15 +878,9 @@ function drawRock(
 }
 
 
-/* =========================
-   COIN
-========================= */
+/* COIN */
 
-function drawCoin(
-  x,
-  y,
-  size
-) {
+function drawCoin(x, y, size) {
 
   ctx.fillStyle = "#ffd83d";
 
@@ -985,9 +914,7 @@ function drawCoin(
 }
 
 
-/* =========================
-   PLAYER
-========================= */
+/* PLAYER */
 
 function drawPlayer() {
 
@@ -995,8 +922,7 @@ function drawPlayer() {
     W / 2 +
     playerX * W * 0.22;
 
-  const y =
-    H * 0.82;
+  const y = H * 0.82;
 
 
   /* Shadow */
@@ -1021,8 +947,7 @@ function drawPlayer() {
 
   /* Board */
 
-  ctx.fillStyle =
-    "#d63845";
+  ctx.fillStyle = "#d63845";
 
   ctx.fillRect(
     x - 60,
@@ -1034,8 +959,7 @@ function drawPlayer() {
 
   /* Body */
 
-  ctx.fillStyle =
-    "#2459c8";
+  ctx.fillStyle = "#2459c8";
 
   ctx.fillRect(
     x - 14,
@@ -1047,9 +971,7 @@ function drawPlayer() {
 
   /* Arms */
 
-  ctx.strokeStyle =
-    "#173b8d";
-
+  ctx.strokeStyle = "#173b8d";
   ctx.lineWidth = 7;
 
   ctx.beginPath();
@@ -1079,8 +1001,7 @@ function drawPlayer() {
 
   /* Head */
 
-  ctx.fillStyle =
-    "#f0c5a3";
+  ctx.fillStyle = "#f0c5a3";
 
   ctx.beginPath();
 
@@ -1097,8 +1018,7 @@ function drawPlayer() {
 
   /* Helmet */
 
-  ctx.fillStyle =
-    "#20252b";
+  ctx.fillStyle = "#20252b";
 
   ctx.beginPath();
 
@@ -1115,9 +1035,7 @@ function drawPlayer() {
 }
 
 
-/* =========================
-   SNOW
-========================= */
+/* SNOW */
 
 function drawSnow() {
 
@@ -1143,13 +1061,17 @@ function drawSnow() {
 }
 
 
-/* =========================
-   CRASH
-========================= */
+/* CRASH */
 
 function crash() {
 
   crashed = true;
+  playing = false;
+
+  speed = 0;
+
+  document.getElementById("speed")
+    .innerText = "0";
 
   document.getElementById("message")
     .style.display = "block";
@@ -1157,9 +1079,7 @@ function crash() {
 }
 
 
-/* =========================
-   RESTART
-========================= */
+/* RESTART */
 
 function restart() {
 
