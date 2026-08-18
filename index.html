@@ -1,29 +1,1173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MathQuiz</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #9edcff;
+    }
+
+    #codeScreen {
+      position: fixed;
+      inset: 0;
+      background: #46178f;
+      color: white;
+      text-align: center;
+      padding-top: 110px;
+      z-index: 20;
+    }
+
+    #codeScreen h1 {
+      font-size: 55px;
+      margin-bottom: 10px;
+    }
+
+    input {
+      width: 250px;
+      padding: 15px;
+      border: 0;
+      border-radius: 8px;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    button {
+      padding: 14px 30px;
+      margin: 15px;
+      border: 0;
+      border-radius: 9px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #game {
+      display: none;
+      position: fixed;
+      inset: 0;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #hud {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px black;
+      z-index: 5;
+    }
+
+    #message {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      text-align: center;
+      font-size: 45px;
+      font-weight: bold;
+      text-shadow: 3px 3px 6px black;
+      display: none;
+      z-index: 10;
+    }
+
+    #message button {
+      font-size: 20px;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      text-shadow: 2px 2px 4px black;
+      font-weight: bold;
+      z-index: 5;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- CODE SCREEN -->
+
+<div id="codeScreen">
+
+  <h1>MathQuiz</h1>
+
+  <h2>Enter Game Code</h2>
+
+  <input id="code" placeholder="Game Code">
+
+  <br>
+
+  <button onclick="unlock()">ENTER</button>
+
+  <p id="wrong"></p>
+
+</div>
+
+
+<!-- GAME -->
+
+<div id="game">
+
+  <div id="hud">
+
+    🏂 Speed:
+    <span id="speed">0</span>
+
+    &nbsp;&nbsp;
+
+    🏁 Distance:
+    <span id="distance">0</span>
+
+    &nbsp;&nbsp;
+
+    🪙 Coins:
+    <span id="coins">0</span>
+
+  </div>
+
+  <div id="controls">
+    A / D or ← / → to steer
+  </div>
+
+  <div id="message">
+
+    💥 CRASHED!
+
+    <br>
+
+    <button onclick="restart()">
+      RESTART
+    </button>
+
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+</div>
+
+
+<script>
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let W;
+let H;
+
+function resize() {
+
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+
+}
+
+window.addEventListener("resize", resize);
+
+resize();
+
+
+/* =========================
+   GAME VARIABLES
+========================= */
+
+let playing = false;
+let crashed = false;
+
+let playerX = 0;
+
+let speed = 0.004;
+let maxSpeed = 0.017;
+
+let distance = 0;
+let coins = 0;
+
+let objects = [];
+
+let snow = [];
+
+let keys = {};
+
+
+/* =========================
+   CONTROLS
+========================= */
+
+document.addEventListener("keydown", function(e) {
+
+  keys[e.key.toLowerCase()] = true;
+
+});
+
+document.addEventListener("keyup", function(e) {
+
+  keys[e.key.toLowerCase()] = false;
+
+});
+
+
+/* =========================
+   UNLOCK
+========================= */
+
+function unlock() {
+
+  const code =
+    document.getElementById("code").value;
+
+  if (code === "223605") {
+
+    document.getElementById("codeScreen")
+      .style.display = "none";
+
+    document.getElementById("game")
+      .style.display = "block";
+
+    startGame();
+
+  } else {
+
+    document.getElementById("wrong")
+      .innerText = "Wrong code! Try again.";
+
+  }
+
+}
+
+
+/* =========================
+   START
+========================= */
+
+function startGame() {
+
+  playing = true;
+  crashed = false;
+
+  playerX = 0;
+
+  speed = 0.004;
+
+  distance = 0;
+
+  coins = 0;
+
+  objects = [];
+
+  snow = [];
+
+  createObjects();
+
+  createSnow();
+
+  document.getElementById("message")
+    .style.display = "none";
+
+  requestAnimationFrame(loop);
+
+}
+
+
+/* =========================
+   OBJECT GENERATION
+========================= */
+
 function createObjects() {
 
-  for (let i = 0; i < 35; i++) {
+  for (let i = 0; i < 45; i++) {
 
     let x;
 
-    // Keep the starting area clear
-    if (i < 5) {
-      x = 0.8 + Math.random() * 0.6;
+    /*
+      Keep the first section
+      mostly clear.
+    */
+
+    if (i < 8) {
+
+      x =
+        (Math.random() < 0.5 ? -1 : 1)
+        *
+        (0.8 + Math.random() * 0.5);
+
     } else {
-      x = (Math.random() * 2 - 1) * 1.5;
+
+      x =
+        (Math.random() * 2 - 1) * 1.45;
+
     }
 
     objects.push({
 
       x: x,
 
-      // Start objects farther away
-      z: 0.8 + Math.random() * 2.5,
+      z:
+        0.35 +
+        Math.random() * 3.5,
 
-      type: Math.random() < 0.55
-        ? "tree"
-        : "rock"
+      type:
+        Math.random() < 0.45
+          ? "tree"
+          : Math.random() < 0.7
+          ? "rock"
+          : "coin"
 
     });
 
   }
 
 }
+
+
+/* =========================
+   SNOW
+========================= */
+
+function createSnow() {
+
+  for (let i = 0; i < 100; i++) {
+
+    snow.push({
+
+      x: Math.random() * W,
+
+      y: Math.random() * H,
+
+      size:
+        1 + Math.random() * 4,
+
+      speed:
+        1 + Math.random() * 3
+
+    });
+
+  }
+
+}
+
+
+/* =========================
+   LOOP
+========================= */
+
+function loop() {
+
+  if (!playing) return;
+
+  update();
+
+  draw();
+
+  requestAnimationFrame(loop);
+
+}
+
+
+/* =========================
+   UPDATE
+========================= */
+
+function update() {
+
+  if (crashed) return;
+
+
+  /* STEERING */
+
+  let steering = 0;
+
+  if (
+    keys["arrowleft"] ||
+    keys["a"]
+  ) {
+
+    steering = -1;
+
+  }
+
+  if (
+    keys["arrowright"] ||
+    keys["d"]
+  ) {
+
+    steering = 1;
+
+  }
+
+
+  playerX += steering * 0.018;
+
+
+  playerX =
+    Math.max(
+      -1.25,
+      Math.min(1.25, playerX)
+    );
+
+
+  /* SPEED */
+
+  speed += 0.000004;
+
+  speed =
+    Math.min(speed, maxSpeed);
+
+
+  /* DISTANCE */
+
+  distance += speed * 100;
+
+
+  /* OBJECTS */
+
+  for (let obj of objects) {
+
+    obj.z -= speed;
+
+
+    if (obj.z < 0.035) {
+
+      obj.z = 3.5;
+
+      obj.x =
+        (Math.random() * 2 - 1) * 1.45;
+
+      obj.type =
+        Math.random() < 0.45
+          ? "tree"
+          : Math.random() < 0.7
+          ? "rock"
+          : "coin";
+
+    }
+
+
+    /* COLLISION */
+
+    if (
+      obj.z < 0.13 &&
+      Math.abs(obj.x - playerX) < 0.14
+    ) {
+
+      if (obj.type === "coin") {
+
+        coins++;
+
+        obj.z = 3.5;
+
+        obj.x =
+          (Math.random() * 2 - 1) * 1.45;
+
+      } else {
+
+        crash();
+
+      }
+
+    }
+
+  }
+
+
+  /* SNOW */
+
+  for (let flake of snow) {
+
+    flake.y += flake.speed;
+
+    flake.x -= steering * 1.5;
+
+    if (flake.y > H) {
+
+      flake.y = -10;
+
+      flake.x = Math.random() * W;
+
+    }
+
+  }
+
+
+  /* HUD */
+
+  document.getElementById("speed")
+    .innerText =
+    Math.round(speed * 5000);
+
+  document.getElementById("distance")
+    .innerText =
+    Math.floor(distance);
+
+  document.getElementById("coins")
+    .innerText =
+    coins;
+
+}
+
+
+/* =========================
+   DRAW
+========================= */
+
+function draw() {
+
+  drawSky();
+
+  drawMountains();
+
+  drawSlope();
+
+  drawObjects();
+
+  drawPlayer();
+
+  drawSnow();
+
+}
+
+
+/* =========================
+   SKY
+========================= */
+
+function drawSky() {
+
+  let gradient =
+    ctx.createLinearGradient(
+      0, 0,
+      0, H
+    );
+
+  gradient.addColorStop(
+    0,
+    "#65bce8"
+  );
+
+  gradient.addColorStop(
+    1,
+    "#eaf9ff"
+  );
+
+  ctx.fillStyle = gradient;
+
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+}
+
+
+/* =========================
+   MOUNTAINS
+========================= */
+
+function drawMountains() {
+
+  ctx.fillStyle = "#d5e5ed";
+
+  ctx.beginPath();
+
+  ctx.moveTo(0, H * 0.5);
+
+  ctx.lineTo(
+    W * 0.16,
+    H * 0.25
+  );
+
+  ctx.lineTo(
+    W * 0.31,
+    H * 0.49
+  );
+
+  ctx.lineTo(
+    W * 0.48,
+    H * 0.18
+  );
+
+  ctx.lineTo(
+    W * 0.67,
+    H * 0.48
+  );
+
+  ctx.lineTo(
+    W * 0.83,
+    H * 0.27
+  );
+
+  ctx.lineTo(
+    W,
+    H * 0.5
+  );
+
+  ctx.lineTo(
+    W,
+    H
+  );
+
+  ctx.lineTo(
+    0,
+    H
+  );
+
+  ctx.closePath();
+
+  ctx.fill();
+
+
+  /* Mountain snow caps */
+
+  ctx.fillStyle = "white";
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    W * 0.48,
+    H * 0.18
+  );
+
+  ctx.lineTo(
+    W * 0.42,
+    H * 0.32
+  );
+
+  ctx.lineTo(
+    W * 0.48,
+    H * 0.28
+  );
+
+  ctx.lineTo(
+    W * 0.55,
+    H * 0.32
+  );
+
+  ctx.closePath();
+
+  ctx.fill();
+
+}
+
+
+/* =========================
+   SLOPE
+========================= */
+
+function drawSlope() {
+
+  const horizon =
+    H * 0.46;
+
+  ctx.fillStyle = "#ffffff";
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    W * 0.47,
+    horizon
+  );
+
+  ctx.lineTo(
+    W * 0.53,
+    horizon
+  );
+
+  ctx.lineTo(
+    W,
+    H
+  );
+
+  ctx.lineTo(
+    0,
+    H
+  );
+
+  ctx.closePath();
+
+  ctx.fill();
+
+
+  /* Track lines */
+
+  ctx.strokeStyle =
+    "#d7eaf2";
+
+  ctx.lineWidth = 3;
+
+  for (let i = 1; i < 14; i++) {
+
+    let t = i / 14;
+
+    let y =
+      horizon +
+      Math.pow(t, 2)
+      * (H - horizon);
+
+    let width =
+      t * W * 0.48;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      W / 2 - width,
+      y
+    );
+
+    ctx.lineTo(
+      W / 2 + width,
+      y
+    );
+
+    ctx.stroke();
+
+  }
+
+}
+
+
+/* =========================
+   OBJECTS
+========================= */
+
+function drawObjects() {
+
+  let sorted =
+    [...objects].sort(
+      (a, b) => b.z - a.z
+    );
+
+
+  for (let obj of sorted) {
+
+    const horizon =
+      H * 0.46;
+
+    const scale =
+      1 / obj.z;
+
+    const x =
+      W / 2 +
+      obj.x *
+      W *
+      0.36 *
+      scale;
+
+    const y =
+      horizon +
+      scale *
+      H *
+      0.31;
+
+    const size =
+      45 * scale;
+
+
+    if (obj.type === "tree") {
+
+      drawTree(
+        x,
+        y,
+        size
+      );
+
+    }
+
+
+    if (obj.type === "rock") {
+
+      drawRock(
+        x,
+        y,
+        size
+      );
+
+    }
+
+
+    if (obj.type === "coin") {
+
+      drawCoin(
+        x,
+        y,
+        size
+      );
+
+    }
+
+  }
+
+}
+
+
+/* =========================
+   TREE
+========================= */
+
+function drawTree(
+  x,
+  y,
+  size
+) {
+
+  ctx.fillStyle = "#71482c";
+
+  ctx.fillRect(
+    x - size * 0.12,
+    y - size,
+    size * 0.24,
+    size
+  );
+
+
+  ctx.fillStyle = "#246b45";
+
+  for (let i = 0; i < 3; i++) {
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      x,
+      y - size * (2.3 - i * 0.55)
+    );
+
+    ctx.lineTo(
+      x - size * (1.1 - i * 0.2),
+      y - size * (0.5 + i * 0.2)
+    );
+
+    ctx.lineTo(
+      x + size * (1.1 - i * 0.2),
+      y - size * (0.5 + i * 0.2)
+    );
+
+    ctx.closePath();
+
+    ctx.fill();
+
+  }
+
+
+  ctx.fillStyle = "white";
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x,
+    y - size * 2.3
+  );
+
+  ctx.lineTo(
+    x - size * 0.55,
+    y - size * 1.45
+  );
+
+  ctx.lineTo(
+    x + size * 0.55,
+    y - size * 1.45
+  );
+
+  ctx.closePath();
+
+  ctx.fill();
+
+}
+
+
+/* =========================
+   ROCK
+========================= */
+
+function drawRock(
+  x,
+  y,
+  size
+) {
+
+  ctx.fillStyle = "#727b80";
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x - size,
+    y
+  );
+
+  ctx.lineTo(
+    x - size * 0.6,
+    y - size * 0.65
+  );
+
+  ctx.lineTo(
+    x + size * 0.3,
+    y - size * 0.7
+  );
+
+  ctx.lineTo(
+    x + size,
+    y
+  );
+
+  ctx.lineTo(
+    x + size * 0.5,
+    y + size * 0.4
+  );
+
+  ctx.lineTo(
+    x - size * 0.7,
+    y + size * 0.35
+  );
+
+  ctx.closePath();
+
+  ctx.fill();
+
+}
+
+
+/* =========================
+   COIN
+========================= */
+
+function drawCoin(
+  x,
+  y,
+  size
+) {
+
+  ctx.fillStyle = "#ffd83d";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y,
+    size * 0.4,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle = "#fff3a0";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x - size * 0.12,
+    y - size * 0.12,
+    size * 0.12,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+}
+
+
+/* =========================
+   PLAYER
+========================= */
+
+function drawPlayer() {
+
+  const x =
+    W / 2 +
+    playerX * W * 0.22;
+
+  const y =
+    H * 0.82;
+
+
+  /* Shadow */
+
+  ctx.fillStyle =
+    "rgba(0,0,0,0.18)";
+
+  ctx.beginPath();
+
+  ctx.ellipse(
+    x,
+    y + 20,
+    50,
+    10,
+    0,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  /* Board */
+
+  ctx.fillStyle =
+    "#d63845";
+
+  ctx.fillRect(
+    x - 60,
+    y + 5,
+    120,
+    9
+  );
+
+
+  /* Body */
+
+  ctx.fillStyle =
+    "#2459c8";
+
+  ctx.fillRect(
+    x - 14,
+    y - 40,
+    28,
+    48
+  );
+
+
+  /* Arms */
+
+  ctx.strokeStyle =
+    "#173b8d";
+
+  ctx.lineWidth = 7;
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x - 12,
+    y - 30
+  );
+
+  ctx.lineTo(
+    x - 28,
+    y - 5
+  );
+
+  ctx.moveTo(
+    x + 12,
+    y - 30
+  );
+
+  ctx.lineTo(
+    x + 28,
+    y - 5
+  );
+
+  ctx.stroke();
+
+
+  /* Head */
+
+  ctx.fillStyle =
+    "#f0c5a3";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y - 53,
+    15,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  /* Helmet */
+
+  ctx.fillStyle =
+    "#20252b";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y - 57,
+    17,
+    Math.PI,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+}
+
+
+/* =========================
+   SNOW
+========================= */
+
+function drawSnow() {
+
+  ctx.fillStyle =
+    "rgba(255,255,255,0.8)";
+
+  for (let flake of snow) {
+
+    ctx.beginPath();
+
+    ctx.arc(
+      flake.x,
+      flake.y,
+      flake.size,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fill();
+
+  }
+
+}
+
+
+/* =========================
+   CRASH
+========================= */
+
+function crash() {
+
+  crashed = true;
+
+  document.getElementById("message")
+    .style.display = "block";
+
+}
+
+
+/* =========================
+   RESTART
+========================= */
+
+function restart() {
+
+  startGame();
+
+}
+
+</script>
+
+</body>
+</html>
