@@ -12,51 +12,44 @@
       margin: 0;
       overflow: hidden;
       font-family: Arial, sans-serif;
-      background: #9edcff;
+      background: #8ed8ff;
     }
 
     #codeScreen {
       position: fixed;
       inset: 0;
+      z-index: 100;
       background: #46178f;
       color: white;
       text-align: center;
       padding-top: 110px;
-      z-index: 20;
     }
 
     #codeScreen h1 {
-      font-size: 55px;
+      font-size: 60px;
+      margin: 10px;
     }
 
-    input {
+    #codeScreen input {
       width: 250px;
       padding: 15px;
-      border: 0;
-      border-radius: 8px;
       font-size: 20px;
       text-align: center;
+      border: 0;
+      border-radius: 8px;
     }
 
     button {
-      padding: 14px 30px;
-      margin: 15px;
+      padding: 13px 25px;
+      margin: 10px;
       border: 0;
-      border-radius: 9px;
+      border-radius: 8px;
       font-size: 18px;
       cursor: pointer;
     }
 
     #game {
       display: none;
-      position: fixed;
-      inset: 0;
-    }
-
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
     }
 
     #hud {
@@ -64,39 +57,51 @@
       top: 15px;
       left: 15px;
       color: white;
-      font-size: 20px;
       font-weight: bold;
+      font-size: 19px;
       text-shadow: 2px 2px 4px black;
-      z-index: 5;
+      z-index: 10;
     }
 
-    #message {
+    #shopButton {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+    }
+
+    #shop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.75);
+      color: white;
+      z-index: 50;
+      text-align: center;
+      padding-top: 60px;
+    }
+
+    .sled {
+      display: inline-block;
+      width: 190px;
+      padding: 15px;
+      margin: 10px;
+      background: rgba(255,255,255,.15);
+      border-radius: 12px;
+    }
+
+    #crash {
+      display: none;
       position: fixed;
       left: 50%;
       top: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%,-50%);
+      z-index: 30;
       color: white;
       text-align: center;
       font-size: 45px;
       font-weight: bold;
-      text-shadow: 3px 3px 6px black;
-      display: none;
-      z-index: 10;
-    }
-
-    #message button {
-      font-size: 20px;
-    }
-
-    #controls {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      text-shadow: 2px 2px 4px black;
-      font-weight: bold;
-      z-index: 5;
+      text-shadow: 3px 3px 5px black;
     }
   </style>
 </head>
@@ -104,9 +109,7 @@
 <body>
 
 <div id="codeScreen">
-
   <h1>MathQuiz</h1>
-
   <h2>Enter Game Code</h2>
 
   <input id="code" placeholder="Game Code">
@@ -116,100 +119,84 @@
   <button onclick="unlock()">ENTER</button>
 
   <p id="wrong"></p>
-
 </div>
 
 
 <div id="game">
 
   <div id="hud">
-
-    🏂 Speed:
-    <span id="speed">0</span>
-
+    🪙 Coins: <span id="coins">0</span>
     &nbsp;&nbsp;
-
-    🏁 Distance:
-    <span id="distance">0</span>
-
+    🏁 Distance: <span id="distance">0</span>
     &nbsp;&nbsp;
-
-    🪙 Coins:
-    <span id="coins">0</span>
-
+    ⚡ Speed: <span id="speed">0</span>
   </div>
 
-  <div id="controls">
-    A / D or ← / → to steer
-  </div>
+  <button id="shopButton" onclick="openShop()">
+    🛷 SLED SHOP
+  </button>
 
-  <div id="message">
+  <div id="shop">
 
-    💥 CRASHED!
+    <h1>SLED SHOP</h1>
+
+    <p>Choose your sled</p>
+
+    <div class="sled">
+      <h2>Classic</h2>
+      <p>Balanced</p>
+      <button onclick="chooseSled(0)">
+        SELECT
+      </button>
+    </div>
+
+    <div class="sled">
+      <h2>Blizzard</h2>
+      <p>Faster</p>
+      <button onclick="chooseSled(1)">
+        SELECT
+      </button>
+    </div>
+
+    <div class="sled">
+      <h2>Rocket</h2>
+      <p>Very fast</p>
+      <button onclick="chooseSled(2)">
+        SELECT
+      </button>
+    </div>
 
     <br>
 
-    <button onclick="restart()">RESTART</button>
+    <button onclick="closeShop()">
+      CLOSE
+    </button>
 
   </div>
 
-  <canvas id="canvas"></canvas>
+
+  <div id="crash">
+
+    💥 CRASH!
+
+    <br>
+
+    <button onclick="restart()">
+      RESTART
+    </button>
+
+  </div>
 
 </div>
 
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
 <script>
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-let W;
-let H;
-
-function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-}
-
-window.addEventListener("resize", resize);
-resize();
-
-
-/* GAME VARIABLES */
-
-let playing = false;
-let crashed = false;
-
-let playerX = 0;
-
-let speed = 0.004;
-let maxSpeed = 0.017;
-
-let distance = 0;
-let coins = 0;
-
-let objects = [];
-let snow = [];
-
-let keys = {};
-
-
-/* CONTROLS */
-
-document.addEventListener("keydown", function(e) {
-
-  keys[e.key.toLowerCase()] = true;
-
-});
-
-document.addEventListener("keyup", function(e) {
-
-  keys[e.key.toLowerCase()] = false;
-
-});
-
-
-/* UNLOCK */
+/* =========================
+   CODE SCREEN
+========================= */
 
 function unlock() {
 
@@ -218,162 +205,505 @@ function unlock() {
 
   if (code === "223605") {
 
-    document.getElementById("codeScreen")
-      .style.display = "none";
+    document.getElementById("codeScreen").style.display =
+      "none";
 
-    document.getElementById("game")
-      .style.display = "block";
+    document.getElementById("game").style.display =
+      "block";
 
     startGame();
 
   } else {
 
-    document.getElementById("wrong")
-      .innerText = "Wrong code! Try again.";
+    document.getElementById("wrong").innerText =
+      "Wrong code!";
 
   }
 
 }
 
 
-/* START GAME */
+/* =========================
+   THREE.JS
+========================= */
+
+let scene;
+let camera;
+let renderer;
+
+let sled;
+
+let obstacles = [];
+let coinsList = [];
+
+let running = false;
+let crashed = false;
+
+let playerX = 0;
+
+let speed = 0.25;
+
+let distance = 0;
+let coins = 0;
+
+let selectedSled = 0;
+
+let keys = {};
+
+
+/* =========================
+   SLED TYPES
+========================= */
+
+const sleds = [
+
+  {
+    name: "Classic",
+    color: 0xd93636,
+    speed: 0.25
+  },
+
+  {
+    name: "Blizzard",
+    color: 0x38a8ff,
+    speed: 0.31
+  },
+
+  {
+    name: "Rocket",
+    color: 0xf2b632,
+    speed: 0.38
+  }
+
+];
+
+
+/* =========================
+   CONTROLS
+========================= */
+
+document.addEventListener(
+  "keydown",
+  e => {
+
+    keys[e.key.toLowerCase()] = true;
+
+  }
+);
+
+document.addEventListener(
+  "keyup",
+  e => {
+
+    keys[e.key.toLowerCase()] = false;
+
+  }
+);
+
+
+/* =========================
+   START
+========================= */
 
 function startGame() {
 
-  playing = true;
+  scene =
+    new THREE.Scene();
+
+  scene.background =
+    new THREE.Color(0x8ed8ff);
+
+
+  camera =
+    new THREE.PerspectiveCamera(
+      70,
+      window.innerWidth /
+      window.innerHeight,
+      0.1,
+      1000
+    );
+
+
+  renderer =
+    new THREE.WebGLRenderer({
+      antialias: true
+    });
+
+  renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+  );
+
+  document
+    .getElementById("game")
+    .appendChild(renderer.domElement);
+
+
+  /* LIGHT */
+
+  const light =
+    new THREE.HemisphereLight(
+      0xffffff,
+      0x668899,
+      1.5
+    );
+
+  scene.add(light);
+
+
+  /* CAMERA */
+
+  camera.position.set(
+    0,
+    4,
+    7
+  );
+
+
+  /* SLOPE */
+
+  createSlope();
+
+
+  /* PLAYER */
+
+  createSled();
+
+
+  /* WORLD */
+
+  createWorld();
+
+
+  running = true;
+
   crashed = false;
-
-  playerX = 0;
-
-  speed = 0.004;
-
-  distance = 0;
-
-  coins = 0;
-
-  objects = [];
-  snow = [];
-
-  createObjects();
-  createSnow();
-
-  document.getElementById("speed")
-    .innerText = "0";
-
-  document.getElementById("distance")
-    .innerText = "0";
-
-  document.getElementById("coins")
-    .innerText = "0";
-
-  document.getElementById("message")
-    .style.display = "none";
 
   requestAnimationFrame(loop);
 
 }
 
 
-/* SAFE OBJECT GENERATION */
+/* =========================
+   SLOPE
+========================= */
 
-function createObjects() {
+function createSlope() {
 
-  for (let i = 0; i < 45; i++) {
+  const geometry =
+    new THREE.PlaneGeometry(
+      18,
+      2000
+    );
 
-    let x;
-    let z;
-
-    /*
-      The first 12 objects are placed
-      far away and outside the middle
-      of the track.
-    */
-
-    if (i < 12) {
-
-      x =
-        Math.random() < 0.5
-          ? -1.0 - Math.random() * 0.35
-          : 1.0 + Math.random() * 0.35;
-
-      z =
-        1.8 + Math.random() * 1.8;
-
-    } else {
-
-      x =
-        (Math.random() * 2 - 1) * 1.45;
-
-      z =
-        0.6 + Math.random() * 3.4;
-
-    }
-
-    objects.push({
-
-      x: x,
-      z: z,
-
-      type:
-        Math.random() < 0.45
-          ? "tree"
-          : Math.random() < 0.7
-          ? "rock"
-          : "coin"
-
+  const material =
+    new THREE.MeshStandardMaterial({
+      color: 0xf5fbff
     });
+
+  const slope =
+    new THREE.Mesh(
+      geometry,
+      material
+    );
+
+  slope.rotation.x =
+    -Math.PI / 2;
+
+  slope.position.y = 0;
+
+  slope.position.z = -900;
+
+  scene.add(slope);
+
+}
+
+
+/* =========================
+   SLED
+========================= */
+
+function createSled() {
+
+  sled =
+    new THREE.Group();
+
+
+  const bodyGeometry =
+    new THREE.BoxGeometry(
+      1.4,
+      0.25,
+      2.3
+    );
+
+  const bodyMaterial =
+    new THREE.MeshStandardMaterial({
+      color:
+        sleds[selectedSled].color
+    });
+
+
+  const body =
+    new THREE.Mesh(
+      bodyGeometry,
+      bodyMaterial
+    );
+
+
+  sled.add(body);
+
+
+  /* RIDER */
+
+  const riderGeometry =
+    new THREE.BoxGeometry(
+      .55,
+      1.1,
+      .55
+    );
+
+  const riderMaterial =
+    new THREE.MeshStandardMaterial({
+      color: 0x2459c8
+    });
+
+
+  const rider =
+    new THREE.Mesh(
+      riderGeometry,
+      riderMaterial
+    );
+
+  rider.position.y =
+    .65;
+
+  sled.add(rider);
+
+
+  /* HEAD */
+
+  const headGeometry =
+    new THREE.SphereGeometry(
+      .32,
+      16,
+      16
+    );
+
+  const headMaterial =
+    new THREE.MeshStandardMaterial({
+      color: 0xf0c5a3
+    });
+
+
+  const head =
+    new THREE.Mesh(
+      headGeometry,
+      headMaterial
+    );
+
+  head.position.y =
+    1.35;
+
+  sled.add(head);
+
+
+  sled.position.set(
+    0,
+    .45,
+    3
+  );
+
+
+  scene.add(sled);
+
+}
+
+
+/* =========================
+   WORLD
+========================= */
+
+function createWorld() {
+
+  for (
+    let i = 0;
+    i < 80;
+    i++
+  ) {
+
+    createObstacle(
+      -i * 18 - 30
+    );
+
+  }
+
+
+  for (
+    let i = 0;
+    i < 60;
+    i++
+  ) {
+
+    createCoin(
+      -i * 25 - 45
+    );
 
   }
 
 }
 
 
-/* SNOW */
+/* =========================
+   OBSTACLE
+========================= */
 
-function createSnow() {
+function createObstacle(z) {
 
-  for (let i = 0; i < 100; i++) {
+  let x;
 
-    snow.push({
+  /*
+    Keep a large safe area
+    around the starting point.
+  */
 
-      x: Math.random() * W,
-      y: Math.random() * H,
+  do {
 
-      size:
-        1 + Math.random() * 4,
+    x =
+      (Math.random() * 2 - 1)
+      * 6;
 
-      speed:
-        1 + Math.random() * 3
+  } while (
+    Math.abs(x) < 2.2 &&
+    z > -120
+  );
 
+
+  const geometry =
+    Math.random() > .5
+
+      ? new THREE.ConeGeometry(
+          1.1,
+          3.5,
+          8
+        )
+
+      : new THREE.DodecahedronGeometry(
+          1.3
+        );
+
+
+  const material =
+    new THREE.MeshStandardMaterial({
+      color:
+        Math.random() > .5
+          ? 0x276b45
+          : 0x777777
     });
 
-  }
+
+  const obstacle =
+    new THREE.Mesh(
+      geometry,
+      material
+    );
+
+
+  obstacle.position.set(
+    x,
+    1,
+    z
+  );
+
+
+  obstacle.userData.hitbox =
+    new THREE.Box3();
+
+
+  scene.add(obstacle);
+
+  obstacles.push(obstacle);
 
 }
 
 
-/* GAME LOOP */
+/* =========================
+   COIN
+========================= */
+
+function createCoin(z) {
+
+  const x =
+    (Math.random() * 2 - 1)
+    * 5;
+
+
+  const geometry =
+    new THREE.TorusGeometry(
+      .45,
+      .14,
+      10,
+      20
+    );
+
+
+  const material =
+    new THREE.MeshStandardMaterial({
+      color: 0xffd633
+    });
+
+
+  const coin =
+    new THREE.Mesh(
+      geometry,
+      material
+    );
+
+
+  coin.position.set(
+    x,
+    1.2,
+    z
+  );
+
+
+  coin.rotation.x =
+    Math.PI / 2;
+
+
+  coin.userData.hitbox =
+    new THREE.Box3();
+
+
+  scene.add(coin);
+
+  coinsList.push(coin);
+
+}
+
+
+/* =========================
+   GAME LOOP
+========================= */
 
 function loop() {
 
-  /*
-    Completely stop the loop after
-    crashing.
-  */
-
-  if (!playing || crashed) {
-    return;
-  }
+  if (!running) return;
 
   update();
-  draw();
+
+  renderer.render(
+    scene,
+    camera
+  );
 
   requestAnimationFrame(loop);
 
 }
 
 
-/* UPDATE */
+/* =========================
+   UPDATE
+========================= */
 
 function update() {
 
@@ -382,710 +712,290 @@ function update() {
 
   /* STEERING */
 
-  let steering = 0;
-
   if (
-    keys["arrowleft"] ||
-    keys["a"]
+    keys["a"] ||
+    keys["arrowleft"]
   ) {
 
-    steering = -1;
-
-  }
-
-  if (
-    keys["arrowright"] ||
-    keys["d"]
-  ) {
-
-    steering = 1;
+    playerX -= .13;
 
   }
 
 
-  playerX += steering * 0.018;
+  if (
+    keys["d"] ||
+    keys["arrowright"]
+  ) {
+
+    playerX += .13;
+
+  }
 
 
   playerX =
     Math.max(
-      -1.25,
-      Math.min(1.25, playerX)
+      -6,
+      Math.min(6, playerX)
     );
 
 
-  /* GRADUAL SPEED */
+  /* MOVE PLAYER */
 
-  speed += 0.000004;
+  sled.position.x +=
+    (playerX - sled.position.x)
+    * .15;
 
-  speed =
-    Math.min(speed, maxSpeed);
+
+  /* MOVE WORLD */
+
+  const currentSpeed =
+    sleds[selectedSled].speed;
+
+
+  for (
+    const obstacle of obstacles
+  ) {
+
+    obstacle.position.z +=
+      currentSpeed;
+
+
+    if (
+      obstacle.position.z > 12
+    ) {
+
+      obstacle.position.z =
+        -1500;
+
+      obstacle.position.x =
+        (Math.random() * 2 - 1)
+        * 6;
+
+    }
+
+
+    /* ACCURATE HITBOX */
+
+    obstacle.userData.hitbox
+      .setFromObject(obstacle);
+
+
+    const playerBox =
+      new THREE.Box3()
+        .setFromObject(sled);
+
+
+    if (
+      playerBox.intersectsBox(
+        obstacle.userData.hitbox
+      )
+    ) {
+
+      crash();
+
+      return;
+
+    }
+
+  }
+
+
+  /* COINS */
+
+  for (
+    const coin of coinsList
+  ) {
+
+    coin.position.z +=
+      currentSpeed;
+
+    coin.rotation.z += .08;
+
+
+    if (
+      coin.position.z > 12
+    ) {
+
+      coin.position.z =
+        -1500;
+
+    }
+
+
+    coin.userData.hitbox
+      .setFromObject(coin);
+
+
+    const playerBox =
+      new THREE.Box3()
+        .setFromObject(sled);
+
+
+    if (
+      playerBox.intersectsBox(
+        coin.userData.hitbox
+      )
+    ) {
+
+      coins++;
+
+      document.getElementById("coins")
+        .innerText = coins;
+
+      coin.position.z =
+        -1500;
+
+    }
+
+  }
 
 
   /* DISTANCE */
 
-  distance += speed * 100;
+  distance +=
+    currentSpeed;
 
-
-  /* OBJECTS */
-
-  for (let obj of objects) {
-
-    obj.z -= speed;
-
-
-    /*
-      When an object goes behind
-      the player, recycle it far
-      into the distance.
-    */
-
-    if (obj.z < 0.035) {
-
-      obj.z = 3.5;
-
-      obj.x =
-        (Math.random() * 2 - 1) * 1.45;
-
-      obj.type =
-        Math.random() < 0.45
-          ? "tree"
-          : Math.random() < 0.7
-          ? "rock"
-          : "coin";
-
-    }
-
-
-    /* COLLISION */
-
-    if (
-      obj.z < 0.13 &&
-      Math.abs(obj.x - playerX) < 0.14
-    ) {
-
-      if (obj.type === "coin") {
-
-        coins++;
-
-        obj.z = 3.5;
-
-        obj.x =
-          (Math.random() * 2 - 1) * 1.45;
-
-      } else {
-
-        crash();
-
-        return;
-
-      }
-
-    }
-
-  }
-
-
-  /* SNOW */
-
-  for (let flake of snow) {
-
-    flake.y += flake.speed;
-
-    flake.x -= steering * 1.5;
-
-    if (flake.y > H) {
-
-      flake.y = -10;
-
-      flake.x =
-        Math.random() * W;
-
-    }
-
-  }
-
-
-  /* HUD */
-
-  document.getElementById("speed")
-    .innerText =
-    Math.round(speed * 5000);
 
   document.getElementById("distance")
     .innerText =
-    Math.floor(distance);
+    Math.floor(distance * 10);
 
-  document.getElementById("coins")
+
+  document.getElementById("speed")
     .innerText =
-    coins;
-
-}
+    Math.floor(currentSpeed * 100);
 
 
-/* DRAW */
+  /* CAMERA */
 
-function draw() {
-
-  drawSky();
-  drawMountains();
-  drawSlope();
-  drawObjects();
-  drawPlayer();
-  drawSnow();
-
-}
+  camera.position.x +=
+    (sled.position.x -
+     camera.position.x)
+    * .08;
 
 
-/* SKY */
-
-function drawSky() {
-
-  let gradient =
-    ctx.createLinearGradient(
-      0, 0,
-      0, H
-    );
-
-  gradient.addColorStop(
+  camera.lookAt(
+    sled.position.x,
     0,
-    "#65bce8"
-  );
-
-  gradient.addColorStop(
-    1,
-    "#eaf9ff"
-  );
-
-  ctx.fillStyle = gradient;
-
-  ctx.fillRect(
-    0,
-    0,
-    W,
-    H
+    -10
   );
 
 }
 
 
-/* MOUNTAINS */
-
-function drawMountains() {
-
-  ctx.fillStyle = "#d5e5ed";
-
-  ctx.beginPath();
-
-  ctx.moveTo(0, H * 0.5);
-
-  ctx.lineTo(
-    W * 0.16,
-    H * 0.25
-  );
-
-  ctx.lineTo(
-    W * 0.31,
-    H * 0.49
-  );
-
-  ctx.lineTo(
-    W * 0.48,
-    H * 0.18
-  );
-
-  ctx.lineTo(
-    W * 0.67,
-    H * 0.48
-  );
-
-  ctx.lineTo(
-    W * 0.83,
-    H * 0.27
-  );
-
-  ctx.lineTo(
-    W,
-    H * 0.5
-  );
-
-  ctx.lineTo(W, H);
-  ctx.lineTo(0, H);
-
-  ctx.closePath();
-
-  ctx.fill();
-
-
-  /* Snow cap */
-
-  ctx.fillStyle = "white";
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    W * 0.48,
-    H * 0.18
-  );
-
-  ctx.lineTo(
-    W * 0.42,
-    H * 0.32
-  );
-
-  ctx.lineTo(
-    W * 0.48,
-    H * 0.28
-  );
-
-  ctx.lineTo(
-    W * 0.55,
-    H * 0.32
-  );
-
-  ctx.closePath();
-
-  ctx.fill();
-
-}
-
-
-/* SLOPE */
-
-function drawSlope() {
-
-  const horizon = H * 0.46;
-
-  ctx.fillStyle = "#ffffff";
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    W * 0.47,
-    horizon
-  );
-
-  ctx.lineTo(
-    W * 0.53,
-    horizon
-  );
-
-  ctx.lineTo(W, H);
-  ctx.lineTo(0, H);
-
-  ctx.closePath();
-
-  ctx.fill();
-
-
-  ctx.strokeStyle = "#d7eaf2";
-  ctx.lineWidth = 3;
-
-  for (let i = 1; i < 14; i++) {
-
-    let t = i / 14;
-
-    let y =
-      horizon +
-      Math.pow(t, 2) *
-      (H - horizon);
-
-    let width =
-      t * W * 0.48;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      W / 2 - width,
-      y
-    );
-
-    ctx.lineTo(
-      W / 2 + width,
-      y
-    );
-
-    ctx.stroke();
-
-  }
-
-}
-
-
-/* OBJECTS */
-
-function drawObjects() {
-
-  let sorted =
-    [...objects].sort(
-      (a, b) => b.z - a.z
-    );
-
-  for (let obj of sorted) {
-
-    const horizon = H * 0.46;
-
-    const scale = 1 / obj.z;
-
-    const x =
-      W / 2 +
-      obj.x *
-      W *
-      0.36 *
-      scale;
-
-    const y =
-      horizon +
-      scale *
-      H *
-      0.31;
-
-    const size = 45 * scale;
-
-
-    if (obj.type === "tree") {
-
-      drawTree(x, y, size);
-
-    }
-
-    if (obj.type === "rock") {
-
-      drawRock(x, y, size);
-
-    }
-
-    if (obj.type === "coin") {
-
-      drawCoin(x, y, size);
-
-    }
-
-  }
-
-}
-
-
-/* TREE */
-
-function drawTree(x, y, size) {
-
-  ctx.fillStyle = "#71482c";
-
-  ctx.fillRect(
-    x - size * 0.12,
-    y - size,
-    size * 0.24,
-    size
-  );
-
-
-  ctx.fillStyle = "#246b45";
-
-  for (let i = 0; i < 3; i++) {
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      x,
-      y - size * (2.3 - i * 0.55)
-    );
-
-    ctx.lineTo(
-      x - size * (1.1 - i * 0.2),
-      y - size * (0.5 + i * 0.2)
-    );
-
-    ctx.lineTo(
-      x + size * (1.1 - i * 0.2),
-      y - size * (0.5 + i * 0.2)
-    );
-
-    ctx.closePath();
-
-    ctx.fill();
-
-  }
-
-
-  ctx.fillStyle = "white";
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x,
-    y - size * 2.3
-  );
-
-  ctx.lineTo(
-    x - size * 0.55,
-    y - size * 1.45
-  );
-
-  ctx.lineTo(
-    x + size * 0.55,
-    y - size * 1.45
-  );
-
-  ctx.closePath();
-
-  ctx.fill();
-
-}
-
-
-/* ROCK */
-
-function drawRock(x, y, size) {
-
-  ctx.fillStyle = "#727b80";
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x - size,
-    y
-  );
-
-  ctx.lineTo(
-    x - size * 0.6,
-    y - size * 0.65
-  );
-
-  ctx.lineTo(
-    x + size * 0.3,
-    y - size * 0.7
-  );
-
-  ctx.lineTo(
-    x + size,
-    y
-  );
-
-  ctx.lineTo(
-    x + size * 0.5,
-    y + size * 0.4
-  );
-
-  ctx.lineTo(
-    x - size * 0.7,
-    y + size * 0.35
-  );
-
-  ctx.closePath();
-
-  ctx.fill();
-
-}
-
-
-/* COIN */
-
-function drawCoin(x, y, size) {
-
-  ctx.fillStyle = "#ffd83d";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    x,
-    y,
-    size * 0.4,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fill();
-
-
-  ctx.fillStyle = "#fff3a0";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    x - size * 0.12,
-    y - size * 0.12,
-    size * 0.12,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fill();
-
-}
-
-
-/* PLAYER */
-
-function drawPlayer() {
-
-  const x =
-    W / 2 +
-    playerX * W * 0.22;
-
-  const y = H * 0.82;
-
-
-  /* Shadow */
-
-  ctx.fillStyle =
-    "rgba(0,0,0,0.18)";
-
-  ctx.beginPath();
-
-  ctx.ellipse(
-    x,
-    y + 20,
-    50,
-    10,
-    0,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fill();
-
-
-  /* Board */
-
-  ctx.fillStyle = "#d63845";
-
-  ctx.fillRect(
-    x - 60,
-    y + 5,
-    120,
-    9
-  );
-
-
-  /* Body */
-
-  ctx.fillStyle = "#2459c8";
-
-  ctx.fillRect(
-    x - 14,
-    y - 40,
-    28,
-    48
-  );
-
-
-  /* Arms */
-
-  ctx.strokeStyle = "#173b8d";
-  ctx.lineWidth = 7;
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x - 12,
-    y - 30
-  );
-
-  ctx.lineTo(
-    x - 28,
-    y - 5
-  );
-
-  ctx.moveTo(
-    x + 12,
-    y - 30
-  );
-
-  ctx.lineTo(
-    x + 28,
-    y - 5
-  );
-
-  ctx.stroke();
-
-
-  /* Head */
-
-  ctx.fillStyle = "#f0c5a3";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    x,
-    y - 53,
-    15,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fill();
-
-
-  /* Helmet */
-
-  ctx.fillStyle = "#20252b";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    x,
-    y - 57,
-    17,
-    Math.PI,
-    Math.PI * 2
-  );
-
-  ctx.fill();
-
-}
-
-
-/* SNOW */
-
-function drawSnow() {
-
-  ctx.fillStyle =
-    "rgba(255,255,255,0.8)";
-
-  for (let flake of snow) {
-
-    ctx.beginPath();
-
-    ctx.arc(
-      flake.x,
-      flake.y,
-      flake.size,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.fill();
-
-  }
-
-}
-
-
-/* CRASH */
+/* =========================
+   CRASH
+========================= */
 
 function crash() {
 
   crashed = true;
-  playing = false;
 
-  speed = 0;
+  running = false;
 
-  document.getElementById("speed")
-    .innerText = "0";
-
-  document.getElementById("message")
+  document.getElementById("crash")
     .style.display = "block";
 
 }
 
 
-/* RESTART */
+/* =========================
+   RESTART
+========================= */
 
 function restart() {
 
-  startGame();
+  location.reload();
 
 }
+
+
+/* =========================
+   SHOP
+========================= */
+
+function openShop() {
+
+  if (running) {
+
+    running = false;
+
+  }
+
+  document.getElementById("shop")
+    .style.display = "block";
+
+}
+
+
+function closeShop() {
+
+  document.getElementById("shop")
+    .style.display = "none";
+
+  if (!crashed) {
+
+    running = true;
+
+    requestAnimationFrame(loop);
+
+  }
+
+}
+
+
+function chooseSled(number) {
+
+  selectedSled = number;
+
+  document.getElementById("shop")
+    .style.display = "none";
+
+  /*
+    Change the existing sled's colour.
+  */
+
+  sled.children[0]
+    .material.color.setHex(
+      sleds[number].color
+    );
+
+
+  if (!crashed) {
+
+    running = true;
+
+    requestAnimationFrame(loop);
+
+  }
+
+}
+
+
+/* =========================
+   RESIZE
+========================= */
+
+window.addEventListener(
+  "resize",
+  function() {
+
+    if (!camera || !renderer)
+      return;
+
+    camera.aspect =
+      window.innerWidth /
+      window.innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+      window.innerWidth,
+      window.innerHeight
+    );
+
+  }
+);
 
 </script>
 
