@@ -6,7 +6,7 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background: #46178f;
       color: white;
       text-align: center;
@@ -14,10 +14,6 @@
 
     #codeScreen {
       padding-top: 100px;
-    }
-
-    h1 {
-      font-size: 50px;
     }
 
     input {
@@ -31,128 +27,366 @@
     button {
       padding: 15px 30px;
       margin: 15px;
-      font-size: 20px;
+      font-size: 18px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
     }
 
-    #games {
+    #game {
       display: none;
-      padding-top: 50px;
     }
 
-    .game {
+    #topbar {
+      background: #222;
+      padding: 10px;
+      font-size: 18px;
+    }
+
+    #world {
+      position: relative;
+      margin: auto;
+      width: 900px;
+      height: 500px;
+      overflow: hidden;
+      background: skyblue;
+      border: 5px solid #222;
+    }
+
+    .block {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      box-sizing: border-box;
+      border: 1px solid rgba(0,0,0,0.25);
+    }
+
+    .grass {
+      background: #4caf50;
+    }
+
+    .dirt {
+      background: #8b5a2b;
+    }
+
+    .stone {
+      background: #777;
+    }
+
+    .wood {
+      background: #9b6b3d;
+    }
+
+    .player {
+      position: absolute;
+      width: 30px;
+      height: 45px;
+      background: #2468d8;
+      border: 3px solid #111;
+      z-index: 10;
+    }
+
+    .mob {
+      position: absolute;
+      width: 32px;
+      height: 38px;
+      background: #55aa55;
+      border: 3px solid #222;
+      z-index: 9;
+    }
+
+    .shield {
+      position: absolute;
+      width: 18px;
+      height: 30px;
+      background: #aaa;
+      border: 3px solid #333;
+      z-index: 11;
+      display: none;
+    }
+
+    #inventory {
+      background: #222;
+      padding: 10px;
+      margin: auto;
+      width: 870px;
+    }
+
+    .slot {
       display: inline-block;
-      background: white;
-      color: black;
-      padding: 25px;
-      margin: 10px;
-      border-radius: 15px;
-      width: 220px;
+      width: 55px;
+      height: 55px;
+      margin: 4px;
+      background: #444;
+      border: 2px solid #888;
+      line-height: 55px;
+      font-size: 24px;
     }
 
-    #gameArea {
-      display: none;
-      margin: 30px auto;
-      width: 90%;
-    }
-
-    iframe {
-      width: 100%;
-      height: 600px;
-      border: none;
-      border-radius: 15px;
-      background: white;
+    #help {
+      font-size: 15px;
     }
   </style>
 </head>
 
 <body>
 
-  <!-- CODE SCREEN -->
-  <div id="codeScreen">
+<!-- CODE SCREEN -->
+<div id="codeScreen">
 
-    <h1>MathQuiz</h1>
+  <h1>MathQuiz</h1>
 
-    <h2>Enter Game Code</h2>
+  <h2>Enter Game Code</h2>
 
-    <input id="code" placeholder="Game Code">
+  <input id="code" placeholder="Game Code">
 
-    <br>
+  <br>
 
-    <button onclick="unlock()">ENTER</button>
+  <button onclick="unlock()">ENTER</button>
 
-    <p id="wrong"></p>
+  <p id="wrong"></p>
 
+</div>
+
+
+<!-- GAME -->
+<div id="game">
+
+  <div id="topbar">
+    ❤️ Health: <span id="health">100</span>
+    &nbsp;&nbsp;
+    🛡️ Shield: <span id="shieldStatus">OFF</span>
+    &nbsp;&nbsp;
+    🧱 Blocks: <span id="blocks">10</span>
   </div>
 
+  <h1>Block World</h1>
 
-  <!-- MAIN PAGE -->
-  <div id="games">
+  <div id="world"></div>
 
-    <h1>📚 MathQuiz</h1>
+  <div id="inventory">
+    <b>🎒 Inventory</b><br>
 
-    <h2>Learning Resources</h2>
-
-    <div class="game">
-      <h2>📖 Study Tools</h2>
-
-      <button onclick="openGame('https://eaglercraft1-8.github.io')">
-        OPEN
-      </button>
-    </div>
-
-    <div class="game">
-      <h2>🧮 Math Practice</h2>
-
-      <button onclick="openGame('https://snowrider-unblocked.github.io')">
-        OPEN
-      </button>
-    </div>
-
-
-    <!-- GAME WINDOW -->
-    <div id="gameArea">
-
-      <iframe id="gameFrame"></iframe>
-
-    </div>
-
+    <div class="slot">🟩</div>
+    <div class="slot">🟫</div>
+    <div class="slot">⬜</div>
+    <div class="slot">🪵</div>
   </div>
 
+  <p id="help">
+    WASD / Arrow Keys = Move |
+    E = Shield |
+    Click blocks = Mine
+  </p>
 
-  <script>
+</div>
 
-    function unlock() {
 
-      var code = document.getElementById("code").value;
+<script>
 
-      if (code === "223605") {
+const world = document.getElementById("world");
 
-        document.getElementById("codeScreen").style.display = "none";
+let playerX = 420;
+let playerY = 300;
 
-        document.getElementById("games").style.display = "block";
+let health = 100;
+let shieldOn = false;
+let blockCount = 10;
 
-      } else {
+const player = document.createElement("div");
+player.className = "player";
+world.appendChild(player);
 
-        document.getElementById("wrong").innerText =
-          "Wrong code! Try again.";
+const shield = document.createElement("div");
+shield.className = "shield";
+world.appendChild(shield);
+
+
+// UNLOCK
+function unlock() {
+
+  const code = document.getElementById("code").value;
+
+  if (code === "223605") {
+
+    document.getElementById("codeScreen").style.display = "none";
+    document.getElementById("game").style.display = "block";
+
+    createWorld();
+    createMob();
+
+  } else {
+
+    document.getElementById("wrong").innerText =
+      "Wrong code! Try again.";
+
+  }
+}
+
+
+// CREATE WORLD
+function createWorld() {
+
+  for (let y = 0; y < 10; y++) {
+
+    for (let x = 0; x < 23; x++) {
+
+      const block = document.createElement("div");
+
+      block.className = "block";
+
+      if (y === 7) {
+        block.classList.add("grass");
+      }
+
+      else if (y > 7) {
+        block.classList.add("dirt");
+      }
+
+      block.style.left = (x * 40) + "px";
+      block.style.top = (y * 40 + 100) + "px";
+
+      block.onclick = function() {
+
+        block.remove();
+
+        blockCount++;
+
+        document.getElementById("blocks").innerText = blockCount;
+
+      };
+
+      world.appendChild(block);
+    }
+  }
+
+  // Trees
+  for (let i = 0; i < 4; i++) {
+
+    let x = Math.floor(Math.random() * 20) * 40;
+
+    for (let y = 4; y < 7; y++) {
+
+      const wood = document.createElement("div");
+
+      wood.className = "block wood";
+
+      wood.style.left = x + "px";
+      wood.style.top = (y * 40 + 100) + "px";
+
+      wood.onclick = function() {
+        wood.remove();
+        blockCount++;
+        document.getElementById("blocks").innerText = blockCount;
+      };
+
+      world.appendChild(wood);
+    }
+  }
+}
+
+
+// PLAYER MOVEMENT
+document.addEventListener("keydown", function(e) {
+
+  const speed = 10;
+
+  if (e.key === "ArrowLeft" || e.key === "a") {
+    playerX -= speed;
+  }
+
+  if (e.key === "ArrowRight" || e.key === "d") {
+    playerX += speed;
+  }
+
+  if (e.key === "ArrowUp" || e.key === "w") {
+    playerY -= speed;
+  }
+
+  if (e.key === "ArrowDown" || e.key === "s") {
+    playerY += speed;
+  }
+
+  // Shield
+  if (e.key.toLowerCase() === "e") {
+
+    shieldOn = !shieldOn;
+
+    shield.style.display =
+      shieldOn ? "block" : "none";
+
+    document.getElementById("shieldStatus").innerText =
+      shieldOn ? "ON" : "OFF";
+  }
+
+  updatePlayer();
+
+});
+
+
+function updatePlayer() {
+
+  playerX = Math.max(0, Math.min(870, playerX));
+  playerY = Math.max(0, Math.min(450, playerY));
+
+  player.style.left = playerX + "px";
+  player.style.top = playerY + "px";
+
+  shield.style.left = (playerX + 30) + "px";
+  shield.style.top = (playerY + 5) + "px";
+}
+
+
+// CREATE MOB
+function createMob() {
+
+  const mob = document.createElement("div");
+
+  mob.className = "mob";
+
+  mob.style.left = "700px";
+  mob.style.top = "300px";
+
+  world.appendChild(mob);
+
+  setInterval(function() {
+
+    let x = parseInt(mob.style.left);
+
+    if (x > playerX) {
+      x -= 3;
+    } else {
+      x += 3;
+    }
+
+    mob.style.left = x + "px";
+
+    // Mob attack
+    if (Math.abs(x - playerX) < 35) {
+
+      if (!shieldOn) {
+
+        health -= 5;
+
+        document.getElementById("health").innerText =
+          health;
+
+        if (health <= 0) {
+
+          alert("You were defeated!");
+
+          location.reload();
+
+        }
 
       }
 
     }
 
+  }, 500);
+}
 
-    function openGame(url) {
-
-      document.getElementById("gameArea").style.display = "block";
-
-      document.getElementById("gameFrame").src = url;
-
-    }
-
-  </script>
+</script>
 
 </body>
 </html>
