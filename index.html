@@ -4,31 +4,45 @@
   <title>MathQuiz</title>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
+      overflow: hidden;
+      background: #87ceeb;
       font-family: Arial, sans-serif;
-      background: #46178f;
-      color: white;
       text-align: center;
     }
 
     #codeScreen {
-      padding-top: 100px;
+      position: absolute;
+      inset: 0;
+      background: #46178f;
+      color: white;
+      padding-top: 120px;
+      z-index: 10;
+    }
+
+    #codeScreen h1 {
+      font-size: 55px;
     }
 
     input {
       padding: 15px;
+      width: 250px;
       font-size: 20px;
       text-align: center;
+      border: 0;
       border-radius: 8px;
-      border: none;
     }
 
     button {
-      padding: 15px 30px;
+      padding: 15px 35px;
       margin: 15px;
-      font-size: 18px;
-      border: none;
+      font-size: 20px;
+      border: 0;
       border-radius: 8px;
       cursor: pointer;
     }
@@ -37,94 +51,34 @@
       display: none;
     }
 
-    #topbar {
-      background: #222;
-      padding: 10px;
-      font-size: 18px;
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
     }
 
-    #world {
-      position: relative;
-      margin: auto;
-      width: 900px;
-      height: 500px;
-      overflow: hidden;
-      background: skyblue;
-      border: 5px solid #222;
+    #hud {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px black;
+      z-index: 5;
     }
 
-    .block {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      box-sizing: border-box;
-      border: 1px solid rgba(0,0,0,0.25);
-    }
-
-    .grass {
-      background: #4caf50;
-    }
-
-    .dirt {
-      background: #8b5a2b;
-    }
-
-    .stone {
-      background: #777;
-    }
-
-    .wood {
-      background: #9b6b3d;
-    }
-
-    .player {
-      position: absolute;
-      width: 30px;
-      height: 45px;
-      background: #2468d8;
-      border: 3px solid #111;
-      z-index: 10;
-    }
-
-    .mob {
-      position: absolute;
-      width: 32px;
-      height: 38px;
-      background: #55aa55;
-      border: 3px solid #222;
-      z-index: 9;
-    }
-
-    .shield {
-      position: absolute;
-      width: 18px;
-      height: 30px;
-      background: #aaa;
-      border: 3px solid #333;
-      z-index: 11;
+    #message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 45px;
+      font-weight: bold;
+      text-shadow: 3px 3px 5px black;
       display: none;
-    }
-
-    #inventory {
-      background: #222;
-      padding: 10px;
-      margin: auto;
-      width: 870px;
-    }
-
-    .slot {
-      display: inline-block;
-      width: 55px;
-      height: 55px;
-      margin: 4px;
-      background: #444;
-      border: 2px solid #888;
-      line-height: 55px;
-      font-size: 24px;
-    }
-
-    #help {
-      font-size: 15px;
+      z-index: 6;
     }
   </style>
 </head>
@@ -152,57 +106,86 @@
 <!-- GAME -->
 <div id="game">
 
-  <div id="topbar">
-    ❤️ Health: <span id="health">100</span>
+  <div id="hud">
+    🏂 Speed: <span id="speed">0</span>
     &nbsp;&nbsp;
-    🛡️ Shield: <span id="shieldStatus">OFF</span>
-    &nbsp;&nbsp;
-    🧱 Blocks: <span id="blocks">10</span>
+    🏁 Distance: <span id="distance">0</span>
   </div>
 
-  <h1>Block World</h1>
-
-  <div id="world"></div>
-
-  <div id="inventory">
-    <b>🎒 Inventory</b><br>
-
-    <div class="slot">🟩</div>
-    <div class="slot">🟫</div>
-    <div class="slot">⬜</div>
-    <div class="slot">🪵</div>
+  <div id="message">
+    CRASHED!
+    <br>
+    <button onclick="restart()">RESTART</button>
   </div>
 
-  <p id="help">
-    WASD / Arrow Keys = Move |
-    E = Shield |
-    Click blocks = Mine
-  </p>
+  <canvas id="canvas"></canvas>
 
 </div>
 
 
 <script>
 
-const world = document.getElementById("world");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-let playerX = 420;
-let playerY = 300;
+let W;
+let H;
 
-let health = 100;
-let shieldOn = false;
-let blockCount = 10;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
 
-const player = document.createElement("div");
-player.className = "player";
-world.appendChild(player);
-
-const shield = document.createElement("div");
-shield.className = "shield";
-world.appendChild(shield);
+window.addEventListener("resize", resize);
+resize();
 
 
-// UNLOCK
+/* =========================
+   GAME VARIABLES
+========================= */
+
+let playing = false;
+
+let speed = 0.012;
+let distance = 0;
+
+let playerX = 0;
+
+let crashed = false;
+
+let objects = [];
+
+let keys = {};
+
+
+/* =========================
+   CONTROLS
+========================= */
+
+document.addEventListener("keydown", function(e) {
+
+  keys[e.key.toLowerCase()] = true;
+
+  if (
+    e.key === "ArrowLeft" ||
+    e.key === "ArrowRight" ||
+    e.key === "ArrowUp" ||
+    e.key === "ArrowDown"
+  ) {
+    e.preventDefault();
+  }
+
+});
+
+document.addEventListener("keyup", function(e) {
+  keys[e.key.toLowerCase()] = false;
+});
+
+
+/* =========================
+   UNLOCK
+========================= */
+
 function unlock() {
 
   const code = document.getElementById("code").value;
@@ -212,8 +195,7 @@ function unlock() {
     document.getElementById("codeScreen").style.display = "none";
     document.getElementById("game").style.display = "block";
 
-    createWorld();
-    createMob();
+    startGame();
 
   } else {
 
@@ -221,169 +203,509 @@ function unlock() {
       "Wrong code! Try again.";
 
   }
+
 }
 
 
-// CREATE WORLD
-function createWorld() {
+/* =========================
+   START GAME
+========================= */
 
-  for (let y = 0; y < 10; y++) {
+function startGame() {
 
-    for (let x = 0; x < 23; x++) {
+  playing = true;
+  crashed = false;
 
-      const block = document.createElement("div");
+  speed = 0.012;
+  distance = 0;
+  playerX = 0;
 
-      block.className = "block";
+  objects = [];
 
-      if (y === 7) {
-        block.classList.add("grass");
-      }
+  createObjects();
 
-      else if (y > 7) {
-        block.classList.add("dirt");
-      }
-
-      block.style.left = (x * 40) + "px";
-      block.style.top = (y * 40 + 100) + "px";
-
-      block.onclick = function() {
-
-        block.remove();
-
-        blockCount++;
-
-        document.getElementById("blocks").innerText = blockCount;
-
-      };
-
-      world.appendChild(block);
-    }
-  }
-
-  // Trees
-  for (let i = 0; i < 4; i++) {
-
-    let x = Math.floor(Math.random() * 20) * 40;
-
-    for (let y = 4; y < 7; y++) {
-
-      const wood = document.createElement("div");
-
-      wood.className = "block wood";
-
-      wood.style.left = x + "px";
-      wood.style.top = (y * 40 + 100) + "px";
-
-      wood.onclick = function() {
-        wood.remove();
-        blockCount++;
-        document.getElementById("blocks").innerText = blockCount;
-      };
-
-      world.appendChild(wood);
-    }
-  }
+  requestAnimationFrame(gameLoop);
 }
 
 
-// PLAYER MOVEMENT
-document.addEventListener("keydown", function(e) {
+/* =========================
+   CREATE ENDLESS OBJECTS
+========================= */
 
-  const speed = 10;
+function createObjects() {
 
-  if (e.key === "ArrowLeft" || e.key === "a") {
-    playerX -= speed;
+  for (let i = 0; i < 35; i++) {
+
+    objects.push({
+
+      x: (Math.random() * 2 - 1) * 1.5,
+
+      z: Math.random() * 3 + 0.2,
+
+      type: Math.random() < 0.55
+        ? "tree"
+        : "rock"
+
+    });
+
   }
 
-  if (e.key === "ArrowRight" || e.key === "d") {
-    playerX += speed;
-  }
-
-  if (e.key === "ArrowUp" || e.key === "w") {
-    playerY -= speed;
-  }
-
-  if (e.key === "ArrowDown" || e.key === "s") {
-    playerY += speed;
-  }
-
-  // Shield
-  if (e.key.toLowerCase() === "e") {
-
-    shieldOn = !shieldOn;
-
-    shield.style.display =
-      shieldOn ? "block" : "none";
-
-    document.getElementById("shieldStatus").innerText =
-      shieldOn ? "ON" : "OFF";
-  }
-
-  updatePlayer();
-
-});
-
-
-function updatePlayer() {
-
-  playerX = Math.max(0, Math.min(870, playerX));
-  playerY = Math.max(0, Math.min(450, playerY));
-
-  player.style.left = playerX + "px";
-  player.style.top = playerY + "px";
-
-  shield.style.left = (playerX + 30) + "px";
-  shield.style.top = (playerY + 5) + "px";
 }
 
 
-// CREATE MOB
-function createMob() {
+/* =========================
+   ADD NEW OBJECT
+========================= */
 
-  const mob = document.createElement("div");
+function recycleObject(obj) {
 
-  mob.className = "mob";
+  obj.z = 3.5;
 
-  mob.style.left = "700px";
-  mob.style.top = "300px";
+  obj.x = (Math.random() * 2 - 1) * 1.5;
 
-  world.appendChild(mob);
+  obj.type =
+    Math.random() < 0.55
+      ? "tree"
+      : "rock";
 
-  setInterval(function() {
+}
 
-    let x = parseInt(mob.style.left);
 
-    if (x > playerX) {
-      x -= 3;
-    } else {
-      x += 3;
+/* =========================
+   GAME LOOP
+========================= */
+
+function gameLoop() {
+
+  if (!playing) return;
+
+  update();
+
+  draw();
+
+  requestAnimationFrame(gameLoop);
+
+}
+
+
+/* =========================
+   UPDATE
+========================= */
+
+function update() {
+
+  if (crashed) return;
+
+
+  /* Steering */
+
+  if (keys["arrowleft"] || keys["a"]) {
+    playerX -= 0.025;
+  }
+
+  if (keys["arrowright"] || keys["d"]) {
+    playerX += 0.025;
+  }
+
+
+  playerX = Math.max(-1.3, Math.min(1.3, playerX));
+
+
+  /* Speed */
+
+  if (keys["arrowup"] || keys["w"]) {
+    speed += 0.0003;
+  } else {
+    speed += 0.00005;
+  }
+
+  speed = Math.min(speed, 0.035);
+
+
+  /* Distance */
+
+  distance += speed * 100;
+
+
+  /* Move objects */
+
+  for (let obj of objects) {
+
+    obj.z -= speed;
+
+    if (obj.z < 0.05) {
+
+      recycleObject(obj);
+
     }
 
-    mob.style.left = x + "px";
+    /* Collision */
 
-    // Mob attack
-    if (Math.abs(x - playerX) < 35) {
+    if (
+      obj.z < 0.22 &&
+      Math.abs(obj.x - playerX) < 0.18
+    ) {
 
-      if (!shieldOn) {
-
-        health -= 5;
-
-        document.getElementById("health").innerText =
-          health;
-
-        if (health <= 0) {
-
-          alert("You were defeated!");
-
-          location.reload();
-
-        }
-
-      }
+      crash();
 
     }
 
-  }, 500);
+  }
+
+
+  document.getElementById("speed").innerText =
+    Math.round(speed * 3000);
+
+  document.getElementById("distance").innerText =
+    Math.floor(distance);
+
+}
+
+
+/* =========================
+   DRAW EVERYTHING
+========================= */
+
+function draw() {
+
+  /* Sky */
+
+  const sky = ctx.createLinearGradient(
+    0, 0,
+    0, H
+  );
+
+  sky.addColorStop(0, "#62b8e8");
+  sky.addColorStop(1, "#dff6ff");
+
+  ctx.fillStyle = sky;
+
+  ctx.fillRect(0, 0, W, H);
+
+
+  /* Mountains */
+
+  drawMountains();
+
+
+  /* Snow track */
+
+  drawTrack();
+
+
+  /* Objects */
+
+  let sorted = [...objects]
+    .sort((a, b) => b.z - a.z);
+
+  for (let obj of sorted) {
+
+    drawObject(obj);
+
+  }
+
+
+  /* Player */
+
+  drawPlayer();
+
+}
+
+
+/* =========================
+   MOUNTAINS
+========================= */
+
+function drawMountains() {
+
+  ctx.fillStyle = "#d9e8f2";
+
+  ctx.beginPath();
+
+  ctx.moveTo(0, H * 0.55);
+
+  ctx.lineTo(W * 0.15, H * 0.28);
+  ctx.lineTo(W * 0.3, H * 0.52);
+
+  ctx.lineTo(W * 0.48, H * 0.22);
+  ctx.lineTo(W * 0.65, H * 0.5);
+
+  ctx.lineTo(W * 0.82, H * 0.25);
+  ctx.lineTo(W, H * 0.52);
+
+  ctx.lineTo(W, H);
+
+  ctx.lineTo(0, H);
+
+  ctx.closePath();
+
+  ctx.fill();
+
+}
+
+
+/* =========================
+   TRACK
+========================= */
+
+function drawTrack() {
+
+  const horizon = H * 0.45;
+
+  ctx.fillStyle = "#ffffff";
+
+  ctx.beginPath();
+
+  ctx.moveTo(W * 0.46, horizon);
+  ctx.lineTo(W * 0.54, horizon);
+
+  ctx.lineTo(W * 0.95, H);
+  ctx.lineTo(W * 0.05, H);
+
+  ctx.closePath();
+
+  ctx.fill();
+
+
+  /* Track shadows */
+
+  ctx.strokeStyle = "#d5e7ef";
+
+  ctx.lineWidth = 4;
+
+  for (let i = 0; i < 10; i++) {
+
+    let y =
+      horizon +
+      Math.pow(i / 10, 2) *
+      (H - horizon);
+
+    let width =
+      20 +
+      i * 55;
+
+    ctx.beginPath();
+
+    ctx.moveTo(W / 2 - width, y);
+    ctx.lineTo(W / 2 + width, y);
+
+    ctx.stroke();
+
+  }
+
+}
+
+
+/* =========================
+   DRAW OBJECT
+========================= */
+
+function drawObject(obj) {
+
+  const horizon = H * 0.45;
+
+  let scale =
+    1 / obj.z;
+
+  let x =
+    W / 2 +
+    obj.x *
+    W *
+    0.35 *
+    scale;
+
+  let y =
+    horizon +
+    (1 / obj.z) *
+    H *
+    0.32;
+
+  let size =
+    55 * scale;
+
+
+  if (obj.type === "tree") {
+
+    /* Tree trunk */
+
+    ctx.fillStyle = "#70452a";
+
+    ctx.fillRect(
+      x - size * 0.12,
+      y - size * 0.8,
+      size * 0.24,
+      size
+    );
+
+
+    /* Snowy tree */
+
+    ctx.fillStyle = "#27734b";
+
+    ctx.beginPath();
+
+    ctx.moveTo(x, y - size * 2);
+    ctx.lineTo(x - size, y);
+    ctx.lineTo(x + size, y);
+
+    ctx.closePath();
+
+    ctx.fill();
+
+
+    ctx.fillStyle = "#ffffff";
+
+    ctx.beginPath();
+
+    ctx.moveTo(x, y - size * 2);
+    ctx.lineTo(x - size * 0.5, y - size * 0.9);
+    ctx.lineTo(x + size * 0.5, y - size * 0.9);
+
+    ctx.closePath();
+
+    ctx.fill();
+
+  }
+
+
+  if (obj.type === "rock") {
+
+    ctx.fillStyle = "#777";
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+      x,
+      y,
+      size,
+      size * 0.65,
+      0,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fill();
+
+  }
+
+}
+
+
+/* =========================
+   PLAYER
+========================= */
+
+function drawPlayer() {
+
+  const x = W / 2 + playerX * W * 0.22;
+
+  const y = H * 0.82;
+
+
+  /* Shadow */
+
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+
+  ctx.beginPath();
+
+  ctx.ellipse(
+    x,
+    y + 25,
+    45,
+    10,
+    0,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  /* Board */
+
+  ctx.fillStyle = "#d63c3c";
+
+  ctx.fillRect(
+    x - 55,
+    y + 10,
+    110,
+    9
+  );
+
+
+  /* Body */
+
+  ctx.fillStyle = "#2468d8";
+
+  ctx.fillRect(
+    x - 14,
+    y - 35,
+    28,
+    45
+  );
+
+
+  /* Head */
+
+  ctx.fillStyle = "#f2c7a5";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y - 48,
+    14,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  /* Helmet */
+
+  ctx.fillStyle = "#222";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y - 53,
+    15,
+    Math.PI,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+}
+
+
+/* =========================
+   CRASH
+========================= */
+
+function crash() {
+
+  crashed = true;
+
+  document.getElementById("message").style.display =
+    "block";
+
+}
+
+
+/* =========================
+   RESTART
+========================= */
+
+function restart() {
+
+  document.getElementById("message").style.display =
+    "none";
+
+  startGame();
+
 }
 
 </script>
